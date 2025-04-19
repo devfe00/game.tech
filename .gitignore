@@ -1,0 +1,33 @@
+.vercel
+
+# MacOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Sistema operacional
+Thumbs.db
+ehthumbs.db
+Icon
+Desktop.ini
+
+# Logs
+*.log
+
+# npm (caso no futuro tenha build tools)
+node_modules/
+dist/
+build/
+
+# Cache
+.cache/
+*.tmp
+
+# Arquivos de sistema
+*.swp
+*.swo
+
+# Outros
+.env
+.env.local

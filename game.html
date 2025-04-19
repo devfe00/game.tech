@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Tech - Terminal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="advanced-features.js" defer></script>
+  <meta name="theme-color" content="#00ff00">
+  <link rel="apple-touch-icon" sizes="180x180" href="favicons/apple-touch-icon.png">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="manifest" href="favicons/site.webmanifest">
+   <style>
+    body {
+      background-color: #000;
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 1.2em;
+      background-color: #00ff00;
+      margin-left: 2px;
+      animation: blink 1s infinite;
+      vertical-align: text-bottom;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .terminal-wrapper {
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    }
+    
+    .password {
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.5em;
+    }
+    
+    .firewall-block {
+      height: 20px;
+      margin: 2px;
+      transition: all 0.3s ease;
+    }
+    
+    .progress-bar {
+      transition: width 0.5s ease-in-out;
+    }
+    
+    .shake {
+      animation: shake 0.5s;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .glow {
+      animation: glow 1s infinite alternate;
+    }
+    
+    @keyframes glow {
+      from { box-shadow: 0 0 5px #00ff00; }
+      to { box-shadow: 0 0 20px #00ff00; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="matrix-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+  <header class="h-screen flex flex-col items-center justify-center text-center px-6 relative z-10">
+    <img src="img/logo.png" alt="Game Tech Logo" class="w-32 h-auto mb-4">
+    
+    <div class="terminal-wrapper w-full max-w-lg p-4 bg-black border-2 border-green-500 rounded-md">
+      <div class="terminal-header flex items-center mb-2">
+        <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+        <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+        <div class="flex-1 text-xs text-green-500 text-left">gametech@terminal:~$</div>
+      </div>
+      
+      <div class="terminal-content text-left">
+        <div class="command-line mb-2">
+          <span class="text-green-500">gametech@terminal:~$ </span>
+          <span id="command-text" class="text-green-500"></span>
+          <span id="command-cursor" class="cursor"></span>
+        </div>
+        
+        <div class="output-line mt-4 mb-6">
+          <h1 id="title" class="text-4xl font-mono font-bold text-green-500"></h1>
+        </div>
+        
+        <div class="command-line mb-2">
+          <span class="text-green-500">gametech@terminal:~$ </span>
+          <span class="text-green-500">cat description.txt</span>
+        </div>
+        
+        <div class="output-line mt-2">
+          <p id="description" class="text-lg font-mono text-green-400"></p>
+          <span id="description-cursor" class="cursor"></span>
+        </div>
+      </div>
+    </div>
+
+    <button id="start-button" class="mt-6 px-6 py-3 bg-green-600 hover:bg-green-800 transition-all text-black font-mono font-semibold rounded-lg border-2 border-green-500">
+      INICIAR_PROGRAMA.exe
+    </button>
+  </header>
+
+  <div id="game-container" class="hidden w-full max-w-4xl bg-gray-900 rounded-lg shadow-lg p-6 text-white mx-auto">
+    <h2 class="text-2xl font-bold mb-4">Game Tech Hack</h2>
+    
+    <!-- sistema -->
+    <div class="mb-4 flex items-center justify-between">
+      <div>
+        <span class="text-gray-400">Status:</span>
+        <span id="status-text" class="ml-2 text-yellow-500">Aguardando</span>
+      </div>
+      <div>
+        <span class="text-gray-400">Nível de Segurança:</span>
+        <span id="security-level" class="ml-2 text-red-500">Alto</span>
+      </div>
+    </div>
+    
+    <div class="relative">
+      <canvas id="game-canvas" class="w-full h-64 bg-gray-800 mb-4 rounded"></canvas>
+      
+      <div id="password-overlay" class="absolute top-0 left-0 w-full h-64 bg-gray-800 rounded hidden flex flex-col items-center justify-center p-4">
+        <h3 class="text-xl text-green-500 mb-4">DESCRIPTOGRAFAR SENHA</h3>
+        <div class="password text-2xl text-yellow-500 mb-4" id="encrypted-password">********</div>
+        <div class="w-full max-w-md bg-gray-700 h-2 rounded overflow-hidden mb-4">
+          <div id="decrypt-progress" class="bg-green-500 h-full progress-bar" style="width: 0%"></div>
+        </div>
+        <div id="decrypt-status" class="text-sm text-gray-400">Aguardando início da descriptografia...</div>
+      </div>
+      
+      <div id="firewall-overlay" class="absolute top-0 left-0 w-full h-64 bg-gray-800 rounded hidden p-4">
+        <h3 class="text-xl text-green-500 mb-4 text-center">QUEBRAR FIREWALL</h3>
+        <p class="text-center text-white mb-4">Clique nos blocos vermelhos para destruir o firewall</p>
+        <div class="flex flex-wrap justify-center" id="firewall-blocks">
+        </div>
+      </div>
+      
+      <div id="mission-complete" class="absolute top-0 left-0 w-full h-64 bg-gray-800 rounded hidden flex items-center justify-center">
+        <div class="text-center">
+          <h3 class="text-3xl text-green-500 mb-4">MISSÃO CONCLUÍDA</h3>
+          <p class="text-white">Todos os sistemas comprometidos. Acesso total concedido.</p>
+          <button id="restart-mission" class="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 rounded">
+            Iniciar Nova Missão
+          </button>
+        </div>
+      </div>
+      
+      <div id="mission-aborted" class="absolute top-0 left-0 w-full h-64 bg-gray-800 rounded hidden flex items-center justify-center">
+        <div class="text-center">
+          <h3 class="text-3xl text-red-500 mb-4">MISSÃO ABORTADA</h3>
+          <p class="text-white">Conexão encerrada. Reinicie para tentar novamente.</p>
+          <button id="restart-after-abort" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">
+            Reiniciar Sistema
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mb-4">
+      <div class="bg-black p-2 rounded h-24 overflow-y-auto font-mono text-sm">
+        <div id="terminal-log" class="text-green-500">
+          > Sistema inicializado. Aguardando instruções...
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex justify-around">
+      <button id="hack-button" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded transition">Iniciar Hack</button>
+      <button id="decrypt-button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition opacity-50 cursor-not-allowed" disabled>Descriptografar</button>
+      <button id="abort-button" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded transition">Abortar Missão</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+    const charSize = 14;
+    let columns = Math.floor(canvas.width / charSize);
+    let drops = [];
+
+    function initDrops() {
+      drops = [];
+      columns = Math.floor(canvas.width / charSize);
+      for (let i = 0; i < columns; i++) {
+        drops[i] = Math.floor(Math.random() * -canvas.height / charSize);
+      }
+    }
+    
+    initDrops();
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#0f0';
+      ctx.font = `${charSize}px monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(char, i * charSize, drops[i] * charSize);
+
+        if (drops[i] * charSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+
+      window.requestAnimationFrame(drawMatrix);
+    }
+
+    drawMatrix();
+
+    function typeText(elementId, text, speed = 50, callback) {
+      const element = document.getElementById(elementId);
+      let i = 0;
+      
+      function type() {
+        if (i < text.length) {
+          element.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(type, speed);
+        } else if (callback) {
+          callback();
+        }
+      }
+      
+      element.innerHTML = '';
+      type();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const commandText = "run Gametech.initiate";
+      const titleText = "GAME TECH HACKER TERMINAL v1.0";
+      const descriptionText = "Invasão em andamento... ou será só um simulador? Clica no INICIAR_PROGRAMA.exe e descubra antes que a CIA perceba.";      
+      typeText('command-text', commandText, 80, () => {
+        setTimeout(() => {
+          typeText('title', titleText, 80, () => {
+            setTimeout(() => {
+              typeText('description', descriptionText, 30);
+            }, 500);
+          });
+        }, 500);
+      });
+    });
+
+    const startButton = document.getElementById('start-button');
+    const gameContainer = document.getElementById('game-container');
+    const hackButton = document.getElementById('hack-button');
+    const decryptButton = document.getElementById('decrypt-button');
+    const abortButton = document.getElementById('abort-button');
+    const terminalLog = document.getElementById('terminal-log');
+    const statusText = document.getElementById('status-text');
+    const securityLevel = document.getElementById('security-level');
+    const passwordOverlay = document.getElementById('password-overlay');
+    const firewallOverlay = document.getElementById('firewall-overlay');
+    const missionComplete = document.getElementById('mission-complete');
+    const missionAborted = document.getElementById('mission-aborted');
+    const restartMission = document.getElementById('restart-mission');
+    const restartAfterAbort = document.getElementById('restart-after-abort');
+    const gameCanvas = document.getElementById('game-canvas');
+    const encryptedPassword = document.getElementById('encrypted-password');
+    const decryptProgress = document.getElementById('decrypt-progress');
+    const decryptStatus = document.getElementById('decrypt-status');
+    const firewallBlocks = document.getElementById('firewall-blocks');
+
+    let gameState = {
+      status: 'waiting',
+      firewallBroken: false,
+      passwordDecrypted: false,
+      accessGranted: false
+    };
+
+    function addLog(message, type = 'normal') {
+      const log = document.createElement('div');
+      log.textContent = `> ${message}`;
+      
+      if (type === 'error') {
+        log.className = 'text-red-500';
+      } else if (type === 'success') {
+        log.className = 'text-green-400';
+      } else if (type === 'warning') {
+        log.className = 'text-yellow-400';
+      } else {
+        log.className = 'text-green-500';
+      }
+      
+      terminalLog.appendChild(log);
+      terminalLog.scrollTop = terminalLog.scrollHeight;
+    }
+
+    startButton.addEventListener('click', () => {
+      document.querySelector('header').classList.add('hidden');
+      gameContainer.classList.remove('hidden');
+      gameContainer.classList.add('flex', 'flex-col', 'items-center', 'justify-center', 'min-h-screen', 'p-4');
+      
+      addLog('Sistema de hacking iniciado. Pronto para operação.');
+    });
+
+    hackButton.addEventListener('click', () => {
+      if (gameState.status !== 'hacking') {
+        gameState.status = 'hacking';
+        statusText.textContent = 'Hackeando';
+        statusText.className = 'ml-2 text-blue-500';
+        
+        addLog('Iniciando tentativa de invasão...', 'warning');
+        setTimeout(() => {
+          addLog('Verificando vulnerabilidades...');
+        }, 1000);
+        
+        setTimeout(() => {
+          addLog('Firewall detectado! Necessário quebrar a proteção.', 'warning');
+          initFirewall();
+          firewallOverlay.classList.remove('hidden');
+        }, 2000);
+      }
+    });
+
+    function initFirewall() {
+      firewallBlocks.innerHTML = '';
+      const totalBlocks = 20;
+      
+      for (let i = 0; i < totalBlocks; i++) {
+        const block = document.createElement('div');
+        block.className = 'firewall-block bg-red-600 w-16';
+        block.dataset.id = i;
+        
+        block.addEventListener('click', () => {
+          block.classList.remove('bg-red-600');
+          block.classList.add('bg-green-600');
+          
+          const remainingBlocks = firewallBlocks.querySelectorAll('.bg-red-600').length;
+          if (remainingBlocks === 0) {
+            firewallBroken();
+          }
+        });
+        
+        firewallBlocks.appendChild(block);
+      }
+    }
+
+    function firewallBroken() {
+      gameState.firewallBroken = true;
+      
+      addLog('Firewall quebrado com sucesso!', 'success');
+      addLog('Acesso para descriptografia disponível.', 'success');
+      
+      securityLevel.textContent = 'Médio';
+      securityLevel.className = 'ml-2 text-yellow-500';
+      
+      firewallOverlay.classList.add('hidden');
+      
+      decryptButton.disabled = false;
+      decryptButton.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
+    decryptButton.addEventListener('click', () => {
+      if (gameState.firewallBroken && !gameState.passwordDecrypted) {
+        passwordOverlay.classList.remove('hidden');
+        
+        addLog('Iniciando processo de descriptografia...', 'warning');
+        
+        const possibleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let password = '';
+        for (let i = 0; i < 8; i++) {
+          password += possibleChars.charAt(Math.floor(Math.random() * possibleChars.length));
+        }
+        
+        let progress = 0;
+        const decryptInterval = setInterval(() => {
+          progress += Math.random() * 5;
+          if (progress > 100) progress = 100;
+          
+          decryptProgress.style.width = `${progress}%`;
+          
+          if (progress < 30) {
+            decryptStatus.textContent = 'Analisando criptografia...';
+          } else if (progress < 60) {
+            decryptStatus.textContent = 'Descodificando caracteres...';
+            
+            let decryptedSoFar = '';
+            for (let i = 0; i < 8; i++) {
+              if (Math.random() < progress / 100) {
+                decryptedSoFar += password[i];
+              } else {
+                decryptedSoFar += '*';
+              }
+            }
+            encryptedPassword.textContent = decryptedSoFar;
+            
+          } else if (progress < 90) {
+            decryptStatus.textContent = 'Quebrando chave final...';
+          } else {
+            decryptStatus.textContent = 'Descriptografia completa!';
+            encryptedPassword.textContent = password;
+            
+            if (progress === 100) {
+              clearInterval(decryptInterval);
+              
+              setTimeout(() => {
+                passwordDecrypted();
+              }, 1000);
+            }
+          }
+        }, 200);
+      }
+    });
+
+    function passwordDecrypted() {
+      gameState.passwordDecrypted = true;
+      
+      addLog('Senha descriptografada com sucesso!', 'success');
+      addLog('Acesso ao sistema concedido.', 'success');
+      addLog('Todos objetivos concluídos. Missão completa!', 'success');
+      
+      securityLevel.textContent = 'Baixo';
+      securityLevel.className = 'ml-2 text-green-500';
+      statusText.textContent = 'Acesso Total';
+      statusText.className = 'ml-2 text-green-500';
+      
+      passwordOverlay.classList.add('hidden');
+      missionComplete.classList.remove('hidden');
+    }
+
+    abortButton.addEventListener('click', () => {
+      addLog('Abortando missão...', 'error');
+      addLog('Desconectando do sistema alvo.', 'error');
+      
+      statusText.textContent = 'Desconectado';
+      statusText.className = 'ml-2 text-red-500';
+      
+      firewallOverlay.classList.add('hidden');
+      passwordOverlay.classList.add('hidden');
+      missionAborted.classList.remove('hidden');
+    });
+
+    restartMission.addEventListener('click', resetGame);
+    restartAfterAbort.addEventListener('click', resetGame);
+
+    function resetGame() {
+      gameState = {
+        status: 'waiting',
+        firewallBroken: false,
+        passwordDecrypted: false,
+        accessGranted: false
+      };
+      
+      statusText.textContent = 'Aguardando';
+      statusText.className = 'ml-2 text-yellow-500';
+      securityLevel.textContent = 'Alto';
+      securityLevel.className = 'ml-2 text-red-500';
+      
+      decryptButton.disabled = true;
+      decryptButton.classList.add('opacity-50', 'cursor-not-allowed');
+      
+      firewallOverlay.classList.add('hidden');
+      passwordOverlay.classList.add('hidden');
+      missionComplete.classList.add('hidden');
+      missionAborted.classList.add('hidden');
+      
+      encryptedPassword.textContent = '********';
+      decryptProgress.style.width = '0%';
+      decryptStatus.textContent = 'Aguardando início da descriptografia...';
+      
+      terminalLog.innerHTML = '';
+      addLog('Sistema reiniciado. Aguardando instruções...'); 
+    }
+  </script>
+</body>
+</html>
