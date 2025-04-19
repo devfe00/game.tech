@@ -1529,8 +1529,8 @@ document.addEventListener('DOMContentLoaded', () => {
   /*
        ,--./,-.        </ >ˆ$
       / #      /     
-     |       ' 
-      \      '   
+     |       | 
+      \        \  
        `._,._,'
   */
 
