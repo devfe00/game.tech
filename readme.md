@@ -43,7 +43,7 @@ JavaScript Vanilla (sem frameworks)
 
 Clone o projeto:
 git clone https://github.com/devfe00/game.tech
-Abra o arquivo game.html em qualquer navegador.
+Abra o arquivo index.html em qualquer navegador.
 Clique em INICIAR_PROGRAMA.exe e entre na imersão.
 
 🧪 Futuras Ideias (quem sabe...)
