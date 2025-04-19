@@ -29,7 +29,7 @@ JavaScript Vanilla (sem frameworks)
 📂 Estrutura de Arquivos
 
 📁 game-project/
-├── game.html
+├── index.html
 ├── advanced-features.js
 ├── img/
 │   └── logo.png
@@ -42,7 +42,7 @@ JavaScript Vanilla (sem frameworks)
 🚀 Como Rodar
 
 Clone o projeto:
-git clone https://github.com/seu-usuario/game-tech-hack
+git clone https://github.com/devfe00/game.tech
 Abra o arquivo game.html em qualquer navegador.
 Clique em INICIAR_PROGRAMA.exe e entre na imersão.
 
